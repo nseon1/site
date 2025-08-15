@@ -94,7 +94,8 @@ caligostro research lab,6.2,research,open source anime model,semi active,discord
 leela chess zero,6.2,research,chess ai,semi active,discord,english ,no,no,singular,no,no,no,no,https://lczero.org/,"Cool project,lots of subprojects from this too"
 LAION,6.2,researc,creation of various models,mostly inactive ,discord,english ,yes,no,company,no,no,no,no,https://laion.ai/,the server itself isnt too active but the company is up to stuff
 autogen,6.2,tool,microsoft autogen on github,semi active,discord,english ,yes,no,company,no,no,yes,yes,https://github.com/microsoft/autogen,Good if you wanna help on the project or need help with autogen
-beaver ai club,6.2,research,models on huggingface,semi active,discord,english ,no,no,singular,no,no,no,no,"https://huggingface.co/BeaverAI/MoistnoMiquno70bnov1noexl2",server's alright; does finetuning work
+beaver ai club,6.2,research,models on huggingface,semi active,discord,english ,no,no,singular,no,no,no,no,"https://huggingface.co/BeaverAI/MoistnoMiquno70bnov1noexl2
+",server's alright; does finetuning work
 pufferai,6.2,tool,"helps with pytorch/model creation,hosts neural mmo",semi active,discord,english ,no,no,singular,,no,,,https://pufferai.github.io/build/html/rst/landing.html,Good if you wanna help with pufferai or neuralMMO
 bandoco,6.2,generation,ai art,semi active,discord,english ,yes,no,company,no,no,no,no,https://x.com/banodoco?lang=en,good if youre newer to ai and want to do some art
 AI tinkerers ,6.1,general,"entrepreneurship,AI builders,irl meetups.",semi active,discord,english ,no,no,irl meetups,yes,no,no,yes,https://aitinkerers.org/p/welcome,"they're fine if you wanna do entrepreneurial stuff, not really research focused"
