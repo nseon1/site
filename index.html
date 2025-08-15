@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Discord Directory</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div id="app" class="p-6 space-y-6">
+        <div class="flex items-center justify-between">
+            <h1 class="text-3xl font-bold">AI Discord Directory</h1>
+            <div class="text-sm text-gray-500" id="result-count">Loading...</div>
+        </div>
+
+        <!-- Search -->
+        <input 
+            type="text" 
+            id="search" 
+            placeholder="Search servers by name, notes, or description..." 
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        
+        <!-- Filters -->
+        <div class="space-y-4 p-4 bg-white rounded-lg border">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-semibold">Filters</h3>
+                <button id="clear-filters" class="px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 rounded">
+                    Clear All
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Server Type</label>
+                    <select id="server-type" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <option value="all">All Types</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Activity</label>
+                    <select id="activity" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <option value="all">All Activity</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Location</label>
+                    <select id="location" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <option value="all">All Locations</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Language</label>
+                    <select id="language" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <option value="all">All Languages</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Governance</label>
+                    <select id="governance" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <option value="all">All Governance</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label class="block text-sm font-medium">Score Range: <span id="score-display">0 - 10</span></label>
+                <div class="flex gap-4">
+                    <input type="range" id="min-score" min="0" max="10" step="0.1" value="0" class="flex-1">
+                    <input type="range" id="max-score" min="0" max="10" step="0.1" value="10" class="flex-1">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <label class="flex items-center space-x-2">
+                    <input type="checkbox" id="company-projects" class="rounded">
+                    <span class="text-sm">Company/GitHub Projects</span>
+                </label>
+                <label class="flex items-center space-x-2">
+                    <input type="checkbox" id="community-projects" class="rounded">
+                    <span class="text-sm">Community Projects</span>
+                </label>
+                <label class="flex items-center space-x-2">
+                    <input type="checkbox" id="reading-group" class="rounded">
+                    <span class="text-sm">Reading Groups</span>
+                </label>
+                <label class="flex items-center space-x-2">
+                    <input type="checkbox" id="paper-channel" class="rounded">
+                    <span class="text-sm">Paper Channel</span>
+                </label>
+                <label class="flex items-center space-x-2">
+                    <input type="checkbox" id="vc-events" class="rounded">
+                    <span class="text-sm">VC Events</span>
+                </label>
+                <label class="flex items-center space-x-2">
+                    <input type="checkbox" id="office-hours" class="rounded">
+                    <span class="text-sm">Office Hours</span>
+                </label>
+                <label class="flex items-center space-x-2">
+                    <input type="checkbox" id="jobs-board" class="rounded">
+                    <span class="text-sm">Jobs Board</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <label class="flex items-center space-x-2">
+                <input type="checkbox" id="compact-view" class="rounded">
+                <span class="text-sm">Compact view</span>
+            </label>
+        </div>
+        
+        <!-- Results -->
+        <div id="results" class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div class="text-center py-8">Loading servers...</div>
+        </div>
+    </div>
+
+    <script>
+        let servers = [];
+        let filteredServers = [];
+
+        // Load and parse CSV
+        async function loadServers() {
+            try {
+                const response = await fetch('./sheet.csv');
+                const csvText = await response.text();
+                
+                const lines = csvText.trim().split('\n');
+                const headers = lines[0].split(',').map(h => h.trim());
+                
+                servers = lines.slice(1).map((line, index) => {
+                    const values = line.split(',').map(v => v.trim());
+                    
+                    return {
+                        name: values[0] || `Server ${index + 1}`,
+                        score: parseFloat(values[1]) || 0,
+                        serverType: values[2] || '',
+                        whatSpecifically: values[3] || '',
+                        activity: values[4] || '',
+                        location: values[5] || '',
+                        language: values[6] || '',
+                        companyProjects: values[7]?.toLowerCase() === 'yes',
+                        communityProjects: values[8]?.toLowerCase() === 'yes',
+                        governanceType: values[9] || '',
+                        readingGroup: values[10]?.toLowerCase() === 'yes',
+                        paperChannel: values[11]?.toLowerCase() === 'yes',
+                        vcEvents: values[12]?.toLowerCase() === 'yes',
+                        officeHours: values[13]?.toLowerCase() === 'yes',
+                        jobsBoard: values[14]?.toLowerCase() === 'yes',
+                        link: values[15] || '#',
+                        notes: values[16] || ''
+                    };
+                });
+                
+                populateFilters();
+                applyFilters();
+                setupEventListeners();
+                
+            } catch (error) {
+                document.getElementById('results').innerHTML = 
+                    `<div class="text-center py-8 text-red-600">Error loading data: ${error.message}</div>`;
+            }
+        }
+
+        function populateFilters() {
+            const serverTypes = [...new Set(servers.map(s => s.serverType).filter(Boolean))];
+            const activities = [...new Set(servers.map(s => s.activity).filter(Boolean))];
+            const locations = [...new Set(servers.map(s => s.location).filter(Boolean))];
+            const languages = [...new Set(servers.map(s => s.language).filter(Boolean))];
+            const governanceTypes = [...new Set(servers.map(s => s.governanceType).filter(Boolean))];
+
+            populateSelect('server-type', serverTypes);
+            populateSelect('activity', activities);
+            populateSelect('location', locations);
+            populateSelect('language', languages);
+            populateSelect('governance', governanceTypes);
+        }
+
+        function populateSelect(elementId, options) {
+            const select = document.getElementById(elementId);
+            options.forEach(option => {
+                const optionElement = document.createElement('option');
+                optionElement.value = option;
+                optionElement.textContent = option;
+                select.appendChild(optionElement);
+            });
+        }
+
+        function applyFilters() {
+            const query = document.getElementById('search').value.toLowerCase();
+            const minScore = parseFloat(document.getElementById('min-score').value);
+            const maxScore = parseFloat(document.getElementById('max-score').value);
+            const serverType = document.getElementById('server-type').value;
+            const activity = document.getElementById('activity').value;
+            const location = document.getElementById('location').value;
+            const language = document.getElementById('language').value;
+            const governance = document.getElementById('governance').value;
+            
+            const companyProjects = document.getElementById('company-projects').checked;
+            const communityProjects = document.getElementById('community-projects').checked;
+            const readingGroup = document.getElementById('reading-group').checked;
+            const paperChannel = document.getElementById('paper-channel').checked;
+            const vcEvents = document.getElementById('vc-events').checked;
+            const officeHours = document.getElementById('office-hours').checked;
+            const jobsBoard = document.getElementById('jobs-board').checked;
+
+            filteredServers = servers.filter(server => {
+                const matchesQuery = !query || 
+                    server.name.toLowerCase().includes(query) ||
+                    server.notes.toLowerCase().includes(query) ||
+                    server.whatSpecifically.toLowerCase().includes(query);
+                
+                const matchesScore = server.score >= minScore && server.score <= maxScore;
+                const matchesServerType = serverType === 'all' || server.serverType === serverType;
+                const matchesActivity = activity === 'all' || server.activity === activity;
+                const matchesLocation = location === 'all' || server.location === location;
+                const matchesLanguage = language === 'all' || server.language === language;
+                const matchesGovernance = governance === 'all' || server.governanceType === governance;
+                
+                const matchesCompanyProjects = !companyProjects || server.companyProjects;
+                const matchesCommunityProjects = !communityProjects || server.communityProjects;
+                const matchesReadingGroup = !readingGroup || server.readingGroup;
+                const matchesPaperChannel = !paperChannel || server.paperChannel;
+                const matchesVcEvents = !vcEvents || server.vcEvents;
+                const matchesOfficeHours = !officeHours || server.officeHours;
+                const matchesJobsBoard = !jobsBoard || server.jobsBoard;
+
+                return matchesQuery && matchesScore && matchesServerType && matchesActivity &&
+                       matchesLocation && matchesLanguage && matchesGovernance &&
+                       matchesCompanyProjects && matchesCommunityProjects && matchesReadingGroup &&
+                       matchesPaperChannel && matchesVcEvents && matchesOfficeHours && matchesJobsBoard;
+            });
+
+            renderResults();
+            updateResultCount();
+        }
+
+        function renderResults() {
+            const resultsContainer = document.getElementById('results');
+            const compactView = document.getElementById('compact-view').checked;
+            
+            if (filteredServers.length === 0) {
+                resultsContainer.innerHTML = '<div class="text-center py-8 text-gray-500">No servers match your filters.</div>';
+                return;
+            }
+
+            if (compactView) {
+                renderCompactView(resultsContainer);
+            } else {
+                renderCardView(resultsContainer);
+            }
+        }
+
+        function renderCardView(container) {
+            container.className = 'grid gap-4 md:grid-cols-2 lg:grid-cols-3';
+            container.innerHTML = filteredServers.map(server => `
+                <div class="bg-white rounded-lg border hover:shadow-lg transition-shadow">
+                    <div class="p-4 space-y-3">
+                        <div class="text-xl font-semibold">
+                            <a href="${server.link}" target="_blank" rel="noopener noreferrer" 
+                               class="text-blue-600 hover:text-blue-800">
+                                ${server.name}
+                            </a>
+                        </div>
+                        
+                        <div class="text-sm text-gray-500 space-y-1">
+                            <div>Score: <span class="font-medium">${server.score}</span></div>
+                            <div>Type: <span class="font-medium">${server.serverType}</span></div>
+                            <div>Activity: <span class="font-medium">${server.activity}</span></div>
+                            <div>Language: <span class="font-medium">${server.language}</span></div>
+                            ${server.governanceType ? `<div>Governance: <span class="font-medium">${server.governanceType}</span></div>` : ''}
+                        </div>
+
+                        <div class="flex flex-wrap gap-1">
+                            ${server.companyProjects ? '<span class="px-2 py-1 bg-gray-100 text-xs rounded">Company Projects</span>' : ''}
+                            ${server.communityProjects ? '<span class="px-2 py-1 bg-gray-100 text-xs rounded">Community Projects</span>' : ''}
+                            ${server.readingGroup ? '<span class="px-2 py-1 bg-gray-100 text-xs rounded">Reading Group</span>' : ''}
+                            ${server.paperChannel ? '<span class="px-2 py-1 bg-gray-100 text-xs rounded">Paper Channel</span>' : ''}
+                            ${server.vcEvents ? '<span class="px-2 py-1 bg-gray-100 text-xs rounded">VC Events</span>' : ''}
+                            ${server.officeHours ? '<span class="px-2 py-1 bg-gray-100 text-xs rounded">Office Hours</span>' : ''}
+                            ${server.jobsBoard ? '<span class="px-2 py-1 bg-gray-100 text-xs rounded">Jobs Board</span>' : ''}
+                        </div>
+
+                        ${server.whatSpecifically ? `
+                            <div class="text-sm">
+                                <span class="font-medium">Focus: </span>
+                                <span class="text-gray-600">${server.whatSpecifically}</span>
+                            </div>
+                        ` : ''}
+
+                        ${server.notes ? `<p class="text-sm text-gray-600">${server.notes}</p>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderCompactView(container) {
+            container.className = 'overflow-auto';
+            container.innerHTML = `
+                <table class="min-w-full text-sm bg-white rounded-lg border">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-4 py-2 text-left font-medium">Name</th>
+                            <th class="px-4 py-2 text-left font-medium">Score</th>
+                            <th class="px-4 py-2 text-left font-medium">Type</th>
+                            <th class="px-4 py-2 text-left font-medium">Activity</th>
+                            <th class="px-4 py-2 text-left font-medium">Features</th>
+                            <th class="px-4 py-2 text-left font-medium">Link</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${filteredServers.map(server => `
+                            <tr class="border-t">
+                                <td class="px-4 py-2 font-semibold">${server.name}</td>
+                                <td class="px-4 py-2">${server.score}</td>
+                                <td class="px-4 py-2">${server.serverType}</td>
+                                <td class="px-4 py-2">${server.activity}</td>
+                                <td class="px-4 py-2">
+                                    <div class="flex flex-wrap gap-1">
+                                        ${server.companyProjects ? '<span class="px-1 bg-gray-200 text-xs rounded">companyprojects</span>' : ''}
+                                        ${server.communityProjects ? '<span class="px-1 bg-gray-200 text-xs rounded">communityprojects</span>' : ''}
+                                        ${server.readingGroup ? '<span class="px-1 bg-gray-200 text-xs rounded">readingroup</span>' : ''}
+                                        ${server.paperChannel ? '<span class="px-1 bg-gray-200 text-xs rounded">paperchannel</span>' : ''}
+                                        ${server.vcEvents ? '<span class="px-1 bg-gray-200 text-xs rounded">vcevents</span>' : ''}
+                                        ${server.officeHours ? '<span class="px-1 bg-gray-200 text-xs rounded">officehours</span>' : ''}
+                                        ${server.jobsBoard ? '<span class="px-1 bg-gray-200 text-xs rounded">jobsboard</span>' : ''}
+                                    </div>
+                                </td>
+                                <td class="px-4 py-2">
+                                    <a href="${server.link}" target="_blank" rel="noopener noreferrer" 
+                                       class="text-blue-600 hover:text-blue-800 underline">link</a>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function updateResultCount() {
+            document.getElementById('result-count').textContent = 
+                `Showing ${filteredServers.length} of ${servers.length} servers`;
+        }
+
+        function updateScoreDisplay() {
+            const minScore = document.getElementById('min-score').value;
+            const maxScore = document.getElementById('max-score').value;
+            document.getElementById('score-display').textContent = `${minScore} - ${maxScore}`;
+        }
+
+        function clearAllFilters() {
+            document.getElementById('search').value = '';
+            document.getElementById('min-score').value = 0;
+            document.getElementById('max-score').value = 10;
+            document.getElementById('server-type').value = 'all';
+            document.getElementById('activity').value = 'all';
+            document.getElementById('location').value = 'all';
+            document.getElementById('language').value = 'all';
+            document.getElementById('governance').value = 'all';
+            document.getElementById('compact-view').checked = false;
+            
+            ['company-projects', 'community-projects', 'reading-group', 'paper-channel', 
+             'vc-events', 'office-hours', 'jobs-board'].forEach(id => {
+                document.getElementById(id).checked = false;
+            });
+            
+            updateScoreDisplay();
+            applyFilters();
+        }
+
+        function setupEventListeners() {
+            // Search and filters
+            document.getElementById('search').addEventListener('input', applyFilters);
+            document.getElementById('min-score').addEventListener('input', () => {
+                updateScoreDisplay();
+                applyFilters();
+            });
+            document.getElementById('max-score').addEventListener('input', () => {
+                updateScoreDisplay();
+                applyFilters();
+            });
+            
+            ['server-type', 'activity', 'location', 'language', 'governance'].forEach(id => {
+                document.getElementById(id).addEventListener('change', applyFilters);
+            });
+            
+            ['company-projects', 'community-projects', 'reading-group', 'paper-channel', 
+             'vc-events', 'office-hours', 'jobs-board', 'compact-view'].forEach(id => {
+                document.getElementById(id).addEventListener('change', applyFilters);
+            });
+            
+            document.getElementById('clear-filters').addEventListener('click', clearAllFilters);
+            
+            updateScoreDisplay();
+        }
+
+        // Initialize
+        loadServers();
+    </script>
+</body>
+</html>
